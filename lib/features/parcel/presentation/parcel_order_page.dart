@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:csc_picker_plus/csc_picker_plus.dart';
-import 'parcel_summary_page.dart';
+// Ensure these paths match your actual folder structure
 
 class ParcelOrderPage extends StatefulWidget {
   const ParcelOrderPage({super.key});
@@ -11,187 +10,149 @@ class ParcelOrderPage extends StatefulWidget {
 
 class _ParcelOrderPageState extends State<ParcelOrderPage> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _mobileController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _dateController = TextEditingController();
 
-  String? countryValue = "";
-  String? stateValue = "";
-  String? cityValue = "";
-  DateTime? selectedDate;
+  // Form Controllers
+  final TextEditingController _senderController = TextEditingController();
+  final TextEditingController _receiverController = TextEditingController();
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: selectedDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null && picked != selectedDate) {
-      setState(() {
-        selectedDate = picked;
-        _dateController.text = "${picked.toLocal()}".split(' ')[0];
-      });
-    }
-  }
+  // State Variables
+  double _weight = 1.0;
+  String _selectedCategory = 'Documents';
+  String _selectedPackaging = 'Standard';
+  double _estimatedPrice = 10.0;
 
-  void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      if (countryValue == null || stateValue == null || cityValue == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select Country, State, and City')),
-        );
-        return;
-      }
-
-      final formData = {
-        'name': _nameController.text,
-        'mobile': _mobileController.text,
-        'address': _addressController.text,
-        'country': countryValue,
-        'state': stateValue,
-        'city': cityValue,
-        'date': _dateController.text,
-      };
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => ParcelSummaryPage(data: formData),
-        ),
+  // Function to update price dynamically
+  void _updatePrice() {
+    setState(() {
+      _estimatedPrice = PriceCalculator.calculate(
+          _weight,
+          _selectedCategory,
+          _selectedPackaging
       );
-    }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _mobileController.dispose();
-    _addressController.dispose();
-    _dateController.dispose();
-    super.dispose();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Parcel Order Details'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+        title: const Text("New Parcel Booking"),
+        backgroundColor: Theme.of(context).colorScheme.primaryContainer,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const Text("Sender & Receiver Details",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+
               TextFormField(
-                controller: _nameController,
+                controller: _senderController,
                 decoration: const InputDecoration(
-                  labelText: 'Name',
+                  labelText: "Sender Name",
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.person),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter your name';
-                  }
-                  return null;
-                },
+                validator: (value) => value!.isEmpty ? "Enter sender name" : null,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 10),
+
               TextFormField(
-                controller: _mobileController,
+                controller: _receiverController,
                 decoration: const InputDecoration(
-                  labelText: 'Mobile No',
+                  labelText: "Receiver Name",
                   border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.phone),
+                  prefixIcon: Icon(Icons.person_outline),
                 ),
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter mobile number';
-                  }
-                  if (value.length < 10) {
-                    return 'Please enter a valid mobile number';
-                  }
-                  return null;
+                validator: (value) => value!.isEmpty ? "Enter receiver name" : null,
+              ),
+
+              const SizedBox(height: 25),
+              const Text("Parcel Details",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+
+              DropdownButtonFormField<String>(
+                value: _selectedCategory,
+                decoration: const InputDecoration(labelText: "Category"),
+                items: ['Documents', 'Electronics', 'Fragile', 'Clothing']
+                    .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
+                    .toList(),
+                onChanged: (val) {
+                  _selectedCategory = val!;
+                  _updatePrice();
                 },
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Street Address',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.home),
-                ),
-                maxLines: 2,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter street address';
-                  }
-                  return null;
+
+              const SizedBox(height: 20),
+              Text("Weight: ${_weight.toStringAsFixed(1)} kg",
+                  style: const TextStyle(fontSize: 16)),
+              Slider(
+                value: _weight,
+                min: 0.5,
+                max: 50.0,
+                divisions: 99,
+                label: "${_weight.toStringAsFixed(1)} kg",
+                onChanged: (val) {
+                  setState(() => _weight = val);
+                  _updatePrice();
                 },
               ),
-              const SizedBox(height: 16),
-              CSCPickerPlus(
-                onCountryChanged: (value) {
-                  setState(() {
-                    countryValue = value;
-                  });
-                },
-                onStateChanged: (value) {
-                  setState(() {
-                    stateValue = value;
-                  });
-                },
-                onCityChanged: (value) {
-                  setState(() {
-                    cityValue = value;
-                  });
-                },
-                layout: Layout.vertical,
-                dropdownDecoration: BoxDecoration(
-                  borderRadius: const BorderRadius.all(Radius.circular(4)),
-                  border: Border.all(color: Colors.grey.shade400, width: 1),
-                ),
-                disabledDropdownDecoration: BoxDecoration(
-                  borderRadius: const BorderRadius.all(Radius.circular(4)),
-                  color: Colors.grey.shade100,
-                  border: Border.all(color: Colors.grey.shade400, width: 1),
+
+              const SizedBox(height: 20),
+              const Text("Packaging Option", style: TextStyle(fontWeight: FontWeight.bold)),
+              Row(
+                children: [
+                  _buildPackagingChip("Standard"),
+                  const SizedBox(width: 10),
+                  _buildPackagingChip("Premium"),
+                  const SizedBox(width: 10),
+                  _buildPackagingChip("Eco"),
+                ],
+              ),
+
+              const SizedBox(height: 30),
+
+              // Dynamic Price Card
+              Card(
+                color: Colors.blue.shade50,
+                elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text("Estimated Total:", style: TextStyle(fontSize: 18)),
+                      Text("\$${_estimatedPrice.toStringAsFixed(2)}",
+                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blue)),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _dateController,
-                readOnly: true,
-                decoration: const InputDecoration(
-                  labelText: 'Date',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.calendar_today),
-                ),
-                onTap: () => _selectDate(context),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select a date';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
+
+              const SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 55,
                 child: ElevatedButton(
-                  onPressed: _submitForm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                   ),
-                  child: const Text('Submit Order', style: TextStyle(fontSize: 18)),
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      // Logic to proceed to Map/Payment
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Processing Booking..."))
+                      );
+                    }
+                  },
+                  child: const Text("Select Pickup Location", style: TextStyle(fontSize: 18)),
                 ),
               ),
             ],
@@ -199,5 +160,28 @@ class _ParcelOrderPageState extends State<ParcelOrderPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildPackagingChip(String label) {
+    bool isSelected = _selectedPackaging == label;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() => _selectedPackaging = label);
+          _updatePrice();
+        }
+      },
+    );
+  }
+}
+
+class PriceCalculator {
+  static double calculate(double weight, String category, String packaging) {
+    double base = 10.0;
+    double weightCost = weight * 2.0;
+    // Add your logic here...
+    return base + weightCost;
   }
 }
