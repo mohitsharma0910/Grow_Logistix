@@ -1,23 +1,48 @@
 import 'package:flutter/material.dart';
-import 'features/auth/presentation/login_page.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'injection_container.dart' as di;
+import 'features/pos/presentation/pages/pos_page.dart';
+import 'features/products/domain/entities/product.dart';
+import 'features/products/domain/repositories/product_repository.dart';
 
-void main() {
-  runApp(const GrowApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await di.init();
+
+  // Seed data for testing if no products exist
+  final productRepo = di.sl<ProductRepository>();
+  final products = await productRepo.getAllProducts();
+  if (products.isEmpty) {
+    await productRepo.addProduct(const Product(
+      name: 'Test Product 1',
+      barcode: '123456',
+      price: 10.0,
+      stock: 100,
+    ));
+    await productRepo.addProduct(const Product(
+      name: 'Test Product 2',
+      barcode: '789012',
+      price: 20.0,
+      stock: 50,
+    ));
+    print('Seed data added.');
+  }
+
+  runApp(const MyApp());
 }
 
-class GrowApp extends StatelessWidget {
-  const GrowApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'GROW Logistics',
-      debugShowCheckedModeBanner: false,
+      title: 'Retail POS',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
-      home: const LoginPage(),
+      home: const POSPage(),
     );
   }
 }
