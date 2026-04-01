@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../products/domain/entities/product.dart';
+import 'package:grow/features/products/domain/entities/product.dart';
 
 class OrderItem extends Equatable {
   final Product product;

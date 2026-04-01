@@ -4,8 +4,9 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../bloc/pos_bloc.dart';
 import '../bloc/pos_event.dart';
 import '../bloc/pos_state.dart';
-import '../../../injection_container.dart';
-import '../../../core/utils/bluetooth_printer_service.dart';
+import 'package:grow/injection_container.dart';
+import 'package:grow/core/utils/bluetooth_printer_service.dart';
+import 'package:grow/features/pos/domain/entities/order.dart';
 import 'package:blue_thermal_printer/blue_thermal_printer.dart';
 
 class POSPage extends StatefulWidget {

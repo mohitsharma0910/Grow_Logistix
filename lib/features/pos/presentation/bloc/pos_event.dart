@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/entities/order.dart';
-import '../../../products/domain/entities/product.dart';
+import 'package:grow/features/products/domain/entities/product.dart';
 
 abstract class POSEvent extends Equatable {
   const POSEvent();
