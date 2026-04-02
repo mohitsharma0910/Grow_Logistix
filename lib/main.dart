@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:grow/injection_container.dart' as di;
-import 'package:grow/features/pos/presentation/pages/pos_page.dart';
+import 'package:grow/features/auth/presentation/login_page.dart';
 import 'package:grow/features/products/domain/entities/product.dart';
 import 'package:grow/features/products/domain/repositories/product_repository.dart';
 
@@ -36,12 +36,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Retail POS',
+      title: 'Grow Logistix',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: const POSPage(),
+      home: const LoginPage(),
     );
   }
 }

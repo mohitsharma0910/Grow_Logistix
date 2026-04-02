@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../parcel/presentation/parcel_order_page.dart';
 import '../../delivery/presentation/delivery_details_page.dart';
 import '../../location/presentation/location_page.dart';
+import '../../pos/presentation/pages/pos_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -28,6 +29,13 @@ class DashboardPage extends StatelessWidget {
         children: [
           _buildMenuCard(
             context,
+            'POS & Billing',
+            Icons.receipt_long,
+            Colors.teal,
+            const POSPage(),
+          ),
+          _buildMenuCard(
+            context,
             'Parcel Orders',
             Icons.inventory_2,
             Colors.blue,
@@ -46,13 +54,6 @@ class DashboardPage extends StatelessWidget {
             Icons.location_on,
             Colors.red,
             const LocationPage(),
-          ),
-          _buildMenuCard(
-            context,
-            'Fleet Status',
-            Icons.directions_bus,
-            Colors.orange,
-            null,
           ),
           _buildMenuCard(
             context,
