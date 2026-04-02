@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.grow"
-    compileSdk = 33
+    compileSdk = 34
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
