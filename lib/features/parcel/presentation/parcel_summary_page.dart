@@ -50,8 +50,12 @@ class ParcelSummaryPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildSummaryItem('Sender', data['sender'], Icons.person, Colors.indigo),
+          const SizedBox(height: 12),
           _buildSummaryItem('Pickup', data['pickup'], Icons.location_on, Colors.green),
           const Divider(height: 32, thickness: 1),
+          _buildSummaryItem('Receiver', data['receiver'], Icons.person_outline, Colors.indigo),
+          const SizedBox(height: 12),
           _buildSummaryItem('Delivery', data['delivery'], Icons.map, Colors.orange),
           const Divider(height: 32, thickness: 1),
           Row(

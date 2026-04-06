@@ -20,11 +20,22 @@ class _POSPageState extends State<POSPage> {
   final MobileScannerController scannerController = MobileScannerController();
   BluetoothDevice? selectedDevice;
   final BluetoothPrinterService printerService = sl<BluetoothPrinterService>();
+  late final POSBloc _posBloc;
+  String? lastScannedBarcode;
+  DateTime? lastScanTime;
 
   @override
   void initState() {
     super.initState();
+    _posBloc = sl<POSBloc>();
     _getBluetoothDevices();
+  }
+
+  @override
+  void dispose() {
+    scannerController.dispose();
+    _posBloc.close();
+    super.dispose();
   }
 
   Future<void> _getBluetoothDevices() async {
@@ -38,14 +49,20 @@ class _POSPageState extends State<POSPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<POSBloc>(),
+    return BlocProvider.value(
+      value: _posBloc,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('POS & Billing'),
           actions: [
             IconButton(
+              icon: const Icon(Icons.keyboard),
+              tooltip: 'Manual Entry',
+              onPressed: _showManualEntryDialog,
+            ),
+            IconButton(
               icon: const Icon(Icons.bluetooth),
+              tooltip: 'Select Printer',
               onPressed: _showPrinterSelection,
             ),
           ],
@@ -53,66 +70,178 @@ class _POSPageState extends State<POSPage> {
         body: Column(
           children: [
             Expanded(
-              flex: 1,
-              child: MobileScanner(
-                controller: scannerController,
-                onDetect: (capture) {
-                  final List<Barcode> barcodes = capture.barcodes;
-                  for (final barcode in barcodes) {
-                    if (barcode.rawValue != null) {
-                      context.read<POSBloc>().add(ScanBarcode(barcode.rawValue!));
-                      // Optional: Vibrate or sound on success
-                    }
-                  }
-                },
+              flex: 2,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  MobileScanner(
+                    controller: scannerController,
+                    onDetect: (capture) {
+                      final List<Barcode> barcodes = capture.barcodes;
+                      final now = DateTime.now();
+                      for (final barcode in barcodes) {
+                        final code = barcode.rawValue;
+                        if (code != null) {
+                          // Debounce: prevent scanning same barcode within 1.5 seconds
+                          if (code == lastScannedBarcode && 
+                              lastScanTime != null && 
+                              now.difference(lastScanTime!).inMilliseconds < 1500) {
+                            continue;
+                          }
+                          lastScannedBarcode = code;
+                          lastScanTime = now;
+                          _posBloc.add(ScanBarcode(code));
+                        }
+                      }
+                    },
+                  ),
+                  Container(
+                    width: 250,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.green, width: 2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  Positioned(
+                    bottom: 10,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        IconButton(
+                          color: Colors.white,
+                          icon: const Icon(Icons.flash_on),
+                          iconSize: 32.0,
+                          onPressed: () => scannerController.toggleTorch(),
+                        ),
+                        const SizedBox(width: 20),
+                        IconButton(
+                          color: Colors.white,
+                          icon: const Icon(Icons.flip_camera_ios),
+                          iconSize: 32.0,
+                          onPressed: () => scannerController.switchCamera(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             Expanded(
-              flex: 2,
+              flex: 3,
               child: BlocConsumer<POSBloc, POSState>(
                 listener: (context, state) {
                   if (state.status == POSStatus.failure) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(state.errorMessage ?? 'Error')),
+                      SnackBar(
+                        content: Text(state.errorMessage ?? 'Error'),
+                        backgroundColor: Colors.red,
+                      ),
                     );
                   } else if (state.status == POSStatus.checkoutSuccess) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Checkout successful!')),
+                      const SnackBar(
+                        content: Text('Checkout successful!'),
+                        backgroundColor: Colors.green,
+                      ),
                     );
                     _printReceipt(context, state);
-                    context.read<POSBloc>().add(ResetPOS());
+                    _posBloc.add(ResetPOS());
                   }
                 },
                 builder: (context, state) {
+                  if (state.currentItems.isEmpty) {
+                    return const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.qr_code_scanner, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('Scan a product barcode to start', style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    );
+                  }
                   return Column(
                     children: [
                       Expanded(
-                        child: ListView.builder(
+                        child: ListView.separated(
+                          padding: const EdgeInsets.all(8),
                           itemCount: state.currentItems.length,
+                          separatorBuilder: (context, index) => const Divider(),
                           itemBuilder: (context, index) {
                             final item = state.currentItems[index];
                             return ListTile(
-                              title: Text(item.product.name),
-                              subtitle: Text('Qty: ${item.quantity} x \$${item.price.toStringAsFixed(2)}'),
-                              trailing: Text('\$${item.total.toStringAsFixed(2)}'),
+                              leading: CircleAvatar(
+                                child: Text(item.quantity.toString()),
+                              ),
+                              title: Text(item.product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Text('Price: \$${item.price.toStringAsFixed(2)}'),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text('\$${item.total.toStringAsFixed(2)}', 
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                  IconButton(
+                                    icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                                    onPressed: () {
+                                      _posBloc.add(UpdateItemQuantity(item.product, item.quantity - 1));
+                                    },
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.add_circle_outline, color: Colors.green),
+                                    onPressed: () {
+                                      _posBloc.add(UpdateItemQuantity(item.product, item.quantity + 1));
+                                    },
+                                  ),
+                                ],
+                              ),
                             );
                           },
                         ),
                       ),
-                      Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Total: \$${state.totalAmount.toStringAsFixed(2)}',
-                              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      Container(
+                        padding: const EdgeInsets.all(20.0),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.5),
+                              spreadRadius: 2,
+                              blurRadius: 5,
+                              offset: const Offset(0, -3),
                             ),
-                            ElevatedButton(
-                              onPressed: state.currentItems.isEmpty
-                                  ? null
-                                  : () => context.read<POSBloc>().add(Checkout()),
-                              child: const Text('Checkout'),
+                          ],
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text('Total Amount:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                                Text(
+                                  '\$${state.totalAmount.toStringAsFixed(2)}',
+                                  style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.green),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 50,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                ),
+                                onPressed: state.status == POSStatus.loading 
+                                  ? null 
+                                  : () => _posBloc.add(Checkout()),
+                                child: state.status == POSStatus.loading
+                                    ? const CircularProgressIndicator(color: Colors.white)
+                                    : const Text('PROCEED TO CHECKOUT', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              ),
                             ),
                           ],
                         ),
@@ -188,5 +317,39 @@ class _POSPageState extends State<POSPage> {
         );
       }
     }
+  }
+
+  void _showManualEntryDialog() {
+    final TextEditingController controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Manual Barcode Entry'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            hintText: 'Enter barcode',
+            border: OutlineInputBorder(),
+          ),
+          keyboardType: TextInputType.text,
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                _posBloc.add(ScanBarcode(controller.text));
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('ADD PRODUCT'),
+          ),
+        ],
+      ),
+    );
   }
 }
