@@ -280,7 +280,7 @@ class _ParcelOrderPageState extends State<ParcelOrderPage> {
       selected: isSelected,
       selectedColor: Colors.indigo.withOpacity(0.1),
       labelStyle: TextStyle(color: isSelected ? Colors.indigo : Colors.black87, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: isSelected ? Colors.indigo : Colors.grey.shade300)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: isSelected ? Colors.indigo : Colors.grey.shade300)),
       onSelected: (selected) {
         if (selected) {
           setState(() => _selectedPackaging = label);

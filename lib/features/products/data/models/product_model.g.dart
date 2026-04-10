@@ -15,7 +15,7 @@ extension GetProductModelCollection on Isar {
 
 const ProductModelSchema = CollectionSchema(
   name: r'ProductModel',
-  id: -5593817549870564659,
+  id: -5593817549870564352,
   properties: {
     r'barcode': PropertySchema(
       id: 0,
@@ -55,7 +55,7 @@ const ProductModelSchema = CollectionSchema(
   idName: r'id',
   indexes: {
     r'barcode': IndexSchema(
-      id: 1156800733621869998,
+      id: 1156800733621870080,
       name: r'barcode',
       unique: true,
       replace: false,

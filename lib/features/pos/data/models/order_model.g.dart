@@ -15,7 +15,7 @@ extension GetOrderModelCollection on Isar {
 
 const OrderModelSchema = CollectionSchema(
   name: r'OrderModel',
-  id: 3315151259962091397,
+  id: 3315151259962091520,
   properties: {
     r'dateTime': PropertySchema(
       id: 0,
@@ -610,7 +610,7 @@ extension OrderModelQueryProperty
 
 const OrderItemModelSchema = Schema(
   name: r'OrderItemModel',
-  id: 3320497907544385651,
+  id: 3320497907544385536,
   properties: {
     r'price': PropertySchema(
       id: 0,
