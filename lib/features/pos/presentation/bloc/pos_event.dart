@@ -36,3 +36,5 @@ class UpdateItemQuantity extends POSEvent {
 class Checkout extends POSEvent {}
 
 class ResetPOS extends POSEvent {}
+
+class DismissScannedProduct extends POSEvent {}

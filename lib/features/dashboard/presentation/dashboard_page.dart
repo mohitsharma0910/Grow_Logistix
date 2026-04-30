@@ -3,6 +3,7 @@ import '../../parcel/presentation/parcel_order_page.dart';
 import '../../delivery/presentation/delivery_details_page.dart';
 import '../../location/presentation/location_page.dart';
 import '../../pos/presentation/pages/pos_page.dart';
+import '../../products/presentation/product_management_page.dart';
 
 class DashboardPage extends StatelessWidget {
   const DashboardPage({super.key});
@@ -57,10 +58,10 @@ class DashboardPage extends StatelessWidget {
           ),
           _buildMenuCard(
             context,
-            'Performance',
-            Icons.analytics,
-            Colors.purple,
-            null,
+            'Products',
+            Icons.inventory_2,
+            Colors.orange,
+            const ProductManagementPage(),
           ),
           _buildMenuCard(
             context,

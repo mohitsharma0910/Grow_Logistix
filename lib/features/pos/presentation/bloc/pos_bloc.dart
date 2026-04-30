@@ -18,50 +18,69 @@ class POSBloc extends Bloc<POSEvent, POSState> {
     on<UpdateItemQuantity>(_onUpdateItemQuantity);
     on<Checkout>(_onCheckout);
     on<ResetPOS>(_onResetPOS);
+    on<DismissScannedProduct>(_onDismissScannedProduct);
   }
 
   Future<void> _onScanBarcode(ScanBarcode event, Emitter<POSState> emit) async {
-    emit(state.copyWith(status: POSStatus.loading));
+    emit(state.copyWith(status: POSStatus.loading, clearScannedProduct: true));
     try {
       final product = await productRepository.getProductByBarcode(event.barcode);
       if (product != null) {
-        add(AddProductToOrder(product));
+        // Emit productFound — UI will show a detail sheet with price
+        emit(state.copyWith(
+          status: POSStatus.productFound,
+          scannedProduct: product,
+        ));
       } else {
         emit(state.copyWith(
           status: POSStatus.failure,
-          errorMessage: 'Product not found for barcode: ${event.barcode}',
+          errorMessage: 'No product found for barcode: ${event.barcode}',
+          clearScannedProduct: true,
         ));
       }
     } catch (e) {
-      emit(state.copyWith(status: POSStatus.failure, errorMessage: e.toString()));
+      emit(state.copyWith(
+        status: POSStatus.failure,
+        errorMessage: e.toString(),
+        clearScannedProduct: true,
+      ));
     }
   }
 
   void _onAddProductToOrder(AddProductToOrder event, Emitter<POSState> emit) {
-    final existingIndex = state.currentItems.indexWhere((item) => item.product.barcode == event.product.barcode);
+    final existingIndex = state.currentItems
+        .indexWhere((item) => item.product.barcode == event.product.barcode);
     List<OrderItem> newItems;
     if (existingIndex != -1) {
       final existingItem = state.currentItems[existingIndex];
       newItems = List.from(state.currentItems);
-      newItems[existingIndex] = existingItem.copyWith(quantity: existingItem.quantity + 1);
+      newItems[existingIndex] =
+          existingItem.copyWith(quantity: existingItem.quantity + 1);
     } else {
-      newItems = List.from(state.currentItems)..add(OrderItem(product: event.product, quantity: 1, price: event.product.price));
+      newItems = List.from(state.currentItems)
+        ..add(OrderItem(
+            product: event.product,
+            quantity: 1,
+            price: event.product.price));
     }
     emit(state.copyWith(
       status: POSStatus.success,
       currentItems: newItems,
       totalAmount: _calculateTotal(newItems),
+      clearScannedProduct: true,
     ));
   }
 
   void _onUpdateItemQuantity(UpdateItemQuantity event, Emitter<POSState> emit) {
-    final existingIndex = state.currentItems.indexWhere((item) => item.product.barcode == event.product.barcode);
+    final existingIndex = state.currentItems
+        .indexWhere((item) => item.product.barcode == event.product.barcode);
     if (existingIndex != -1) {
       List<OrderItem> newItems = List.from(state.currentItems);
       if (event.quantity <= 0) {
         newItems.removeAt(existingIndex);
       } else {
-        newItems[existingIndex] = newItems[existingIndex].copyWith(quantity: event.quantity);
+        newItems[existingIndex] =
+            newItems[existingIndex].copyWith(quantity: event.quantity);
       }
       emit(state.copyWith(
         status: POSStatus.success,
@@ -83,12 +102,21 @@ class POSBloc extends Bloc<POSEvent, POSState> {
       await posRepository.saveOrder(order);
       emit(state.copyWith(status: POSStatus.checkoutSuccess));
     } catch (e) {
-      emit(state.copyWith(status: POSStatus.failure, errorMessage: e.toString()));
+      emit(state.copyWith(
+          status: POSStatus.failure, errorMessage: e.toString()));
     }
   }
 
   void _onResetPOS(ResetPOS event, Emitter<POSState> emit) {
     emit(const POSState());
+  }
+
+  void _onDismissScannedProduct(
+      DismissScannedProduct event, Emitter<POSState> emit) {
+    emit(state.copyWith(
+      status: state.currentItems.isEmpty ? POSStatus.initial : POSStatus.success,
+      clearScannedProduct: true,
+    ));
   }
 
   double _calculateTotal(List<OrderItem> items) {
