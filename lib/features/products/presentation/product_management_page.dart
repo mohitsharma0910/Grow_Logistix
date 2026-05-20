@@ -69,7 +69,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
             onPressed: () => Navigator.pop(ctx, true),
             child:
                 const Text('DELETE', style: TextStyle(color: Colors.red)),
-          ),
+             ),
         ],
       ),
     );
@@ -80,7 +80,7 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) { 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(

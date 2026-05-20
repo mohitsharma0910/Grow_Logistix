@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "391362618010",
+    "project_id": "grow-logistix",
+    "storage_bucket": "grow-logistix.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:391362618010:android:1c9d392f0e395f16dbf523",
+        "android_client_info": {
+          "package_name": "com.example.grow"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAAj1Lgk_6ZrFqaCEkHxEKlxYIPjHjlh5M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

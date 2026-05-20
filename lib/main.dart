@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:grow/firebase_options.dart';
 import 'package:grow/injection_container.dart' as di;
 import 'package:grow/features/auth/presentation/login_page.dart';
 import 'package:grow/features/products/domain/entities/product.dart';
@@ -47,6 +49,7 @@ class _AppInitializerState extends State<AppInitializer> {
   }
 
   Future<void> _initialize() async {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     await di.init();
     await _seedInitialData();
   }
